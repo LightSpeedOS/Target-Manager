@@ -1,6 +1,7 @@
 #include "Includes.h"
 #include "Logic.h"
 #include "Structs.h"
+#include "Entities.h"
 
 using namespace std;
 
@@ -14,6 +15,7 @@ auto main() -> int
 	localPlayer.name = "Raider";
 	localPlayer.health = 100;
 	localPlayer.team = 1;
+	localPlayer.damage = 20;
 	localPlayer.position.x = 2000;
 	localPlayer.position.y = 1000;
 	entities.push_back(localPlayer);
@@ -52,19 +54,59 @@ auto main() -> int
 
 	int mainMenu;
 
+	Entity* currentTarget = nullptr;
+
 
 	while (true)
 	{
-		cout << "========== TARGET MANAGER ==========" << endl;
+		clear();
+		SetConsoleTitleA("Target Manager");
+
+		cout << "========= TARGET MANAGER ==========" << endl;
 		space();
 
+		printTarget(currentTarget);
+
 		cout << "[1] -> List Entities" << endl;
+		cout << "[2] -> Find Closest Target" << endl;
+		cout << "[3] -> Attack Current Target" << endl;
+		cout << "[4] -> Heal Enemy" << endl;
+		cout << "[5] -> Change Enemy Distance" << endl;
+		cout << "[6] -> Clear Target" << endl;
+		cout << "[7] Exit" << endl;
+
+		space();
+		cout << "> ";
 		cin >> mainMenu;
 
 		switch (mainMenu)
 		{
 		case List:
 			listEntities(entities, localPlayer);
+			break;
+
+		case Find:
+			currentTarget = findClosest(entities, localPlayer);
+			break;
+
+		case Attack:
+			attackTarget(currentTarget, &localPlayer);
+			break;
+
+		case Heal:
+			healTarget(currentTarget);
+			break;
+
+		case Change:
+			targetPosition(currentTarget, entities, localPlayer);
+			break;
+
+		case Clear:
+			clearTarget(currentTarget);
+			break;
+
+		case Exit:
+			shutDown();
 			break;
 		}
 	}

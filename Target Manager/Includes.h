@@ -56,6 +56,18 @@ bool input()
 	return false;
 }
 
+void shutDown()
+{
+	cout << "Shutting Down";
+	this_thread::sleep_for(chrono::seconds(1));
+	cout << ".";
+	this_thread::sleep_for(chrono::seconds(1));
+	cout << ".";
+	this_thread::sleep_for(chrono::seconds(1));
+	cout << ".";
+	exit(0);
+}
+
 void initConsole()
 {
 	srand(time(0));

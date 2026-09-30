@@ -17,8 +17,15 @@ enum subMenu
 {
 	All = 1,
 	Enemies,
-	Team,
+	Allies,
 	Local
+};
+
+enum Team
+{
+	None = -1,
+	Raiders = 1, // Team
+	Arcs        // Enemy
 };
 
 struct Vec2
@@ -30,6 +37,8 @@ struct Entity
 {
 	string name;
 	int health;
+	static constexpr int maxHealth = 100;
 	int team;
+	int damage;
 	Vec2 position;
 };

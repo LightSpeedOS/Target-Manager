@@ -14,6 +14,15 @@ void healthBar(Entity& entity)
 	cout << "]";
 }
 
+const char* healthColor(Entity* entity)
+{
+	if (entity->health > 50) return brightGreen;
+	else if (entity->health > 20) return yellow;
+	else return red;
+
+	return reset;
+}
+
 const char* teamColor(Entity& entity)
 {
 	if (entity.team == 1) return green;
@@ -22,83 +31,197 @@ const char* teamColor(Entity& entity)
 	return reset;
 }
 
-void listEntities(vector<Entity>& entities, Entity& localPlayer)
+void printTarget(Entity* target)
 {
-	int subMenu;
+	if (target == nullptr) cout << "Current Target: None" << endl, space();
+	else cout << "Current Target: " << target->name << " " << healthColor(target) << target->health << reset << "/" << green << target->maxHealth << reset << endl, space();
+}
 
-	while (true)
+
+Entity* findClosest(vector<Entity>& entities, Entity& localPlayer)
+{
+	clear();
+
+	Entity* closet = nullptr;
+	float closestDistance = FLT_MAX;
+	constexpr float unitsPerMeter = 100.0f;
+	constexpr float maxDistanceMeters = 200.0f;
+
+	for (size_t i = 0; i < entities.size(); i++)
 	{
-		clear();
+		float disX = entities[i].position.x - localPlayer.position.x;
+		float disY = entities[i].position.y - localPlayer.position.y;
 
-		cout << "========== Sub Menu ==========" << endl;
-		space();
+		float distance = sqrt((disX * disX) + (disY * disY));
+		float distanceMeters = distance / unitsPerMeter;
 
-		cout << "[1] -> List All" << endl;
-		cout << "[2] -> List Enemies" << endl;
-		cout << "[3] -> List Team" << endl;
-		cout << "[4] -> List Local Player" << endl;
-		space();
 
-		cout << "> ";
-		cin >> subMenu;
-
-		if (input())
+		if (distanceMeters >= maxDistanceMeters)
 		{
+			cout << "Entity is out of range." << endl;
 			continue;
 		}
 
-		switch (subMenu)
+		if (entities[i].team == 1) continue;
+
+		if (closestDistance > distance)
+		{
+			closestDistance = distance;
+			closet = &entities[i];
+		}
+	}
+
+	if (closet == nullptr)
+	{
+		clear();
+		cout << "[!] No Targets Within Range" << endl;
+		pause();
+		return nullptr;
+	}
+
+	else
+	{
+		space();
+		cout << "Closest: " << closet->name << " | " << fixed << setprecision(2) << closestDistance / unitsPerMeter << "[m]" << endl;
+		getKey();
+		return closet;
+	}
+
+}
+
+void attackTarget(Entity*& target, Entity* localPlayer)
+{
+	clear();
+
+	if (target == nullptr)
+	{
+		cout << "[!] No Target To Attack" << endl;
+		pause();
+		return;
+	}
+
+	const int targetHealthSnapshot = target->health;
+	target->health -= localPlayer->damage;
+
+	cout << localPlayer->name << " Attacking " << target->name << " " << targetHealthSnapshot << " -> " << target->health
+		<< " (" << red << "-" << localPlayer->damage << reset << ")" << endl;
+	getKey();
+}
+
+void healTarget(Entity*& target)
+{
+	clear();
+	if (target == nullptr)
+	{
+		cout << "[!] No Target To Heal" << endl;
+		pause();
+		return;
+	}
+
+	if (target->health == 100)
+	{
+		cout << "[+] " << target->name << "'s Health is Alread Max" << endl;
+		pause();
+		return;
+	}
+
+	const int targetHealthSnapshot = target->health;
+	const int amount = target->maxHealth - targetHealthSnapshot;
+	target->health = target->maxHealth;
+
+	cout << "[+] " << target->name << "'s Health Has Been Replenished To Max | " << targetHealthSnapshot
+		<< " -> " << target->health << " (" << green << "+" << amount << reset << ")" << endl;
+	getKey();
+}
+
+void targetPosition(Entity*& target, vector<Entity>& entities, Entity& localPlayer)
+{
+	clear();
+
+
+	if (target == nullptr)
+	{
+		cout << "[!] No Target To Edit" << endl;
+		pause();
+		return;
+	}
+	int result = MessageBoxA(NULL, "Changing The Target's Poistion Will Result In a Different Target Till Relaunch (or if You Clear Target)", "Disclaimer!", MB_YESNO | MB_ICONWARNING);
+
+	if (result == IDYES)
+	{
+		float constexpr unitsPerMeter = 100.0f;
+
+		while (true)
 		{
 
-		case All:
-			clear();
+			float newX;
+			float newY;
 
-			cout << "Entity List" << endl;
-			space();
+			float xSnap = target->position.x;
+			float ySnap = target->position.y;
 
-			for (size_t i = 0; i < entities.size(); i++)
+			cout << "Enter X: ";
+			cin >> newX;
+
+			if (input())
 			{
-				cout << "Name: " << entities[i].name << " | Team: " << teamColor(entities[i]) << entities[i].team << reset << " | ";
-				healthBar(entities[i]); cout << " (" << entities[i].health << ") ";
-				if (entities[i].health <= 0) cout << " Dead!" << endl;
-				else cout << endl;
+				continue;
 			}
 
-			space();
-			cout << "[S] Show Coordinates  [R] Return" << endl;
+			cout << "Enter Y: ";
+			cin >> newY;
 
-			char key = _getch();
-
-			switch (tolower(key))
+			if (input())
 			{
-			case 's':
-				clear();
-
-				constexpr float unitsPerMeter = 100.0f;
-
-				for (size_t i = 0; i < entities.size(); i++)
-				{
-
-					float disX = entities[i].position.x - localPlayer.position.x;
-					float disY = entities[i].position.y - localPlayer.position.y;
-
-					float distance = sqrt((disX * disX) + (disY * disY));
-					float distanceMeters = distance / unitsPerMeter;
-
-					cout << "Name: " << entities[i].name << " | Team: " << teamColor(entities[i]) << entities[i].team << reset << " | ";
-					healthBar(entities[i]); cout << " (" << entities[i].health << ") ";
-					cout << fixed << setprecision(2);
-					cout << distanceMeters << "[m] ";;
-
-					if (i == 0) cout << "Local Player" << endl;
-					else cout << endl;
-				}
-				getKey();
-				
-
-				break;
+				continue;
 			}
+
+			target->position.x = newX;
+			target->position.y = newY;
+
+
+			float disX = target->position.x - localPlayer.position.x;
+			float disY = target->position.y - localPlayer.position.y;
+
+			float oldDisX = xSnap - localPlayer.position.x;
+			float oldDisY = ySnap - localPlayer.position.y;
+
+			float distance = sqrt((disX * disX) + (disY * disY));
+			float oldDistance = sqrt((oldDisX * oldDisX) + (oldDisY * oldDisY));
+
+			float distanceMeters = distance / unitsPerMeter;
+			float oldDistanceMeters = oldDistance / unitsPerMeter;
+
+
+			cout << "[+] Changed " << target->name << "'s Coordinates From " << oldDistanceMeters << "[m] -> " << distanceMeters << "[m]" << endl;
+			getKey();
+			break;
 		}
+	}
 
+	else if (result == IDNO)
+	{
+		cout << "Reuturning." << endl;
+		pause();
+		return;
+	}
+
+}
+
+void clearTarget(Entity*&  target)
+{
+	clear();
+	if (target == nullptr)
+	{
+		cout << "[!] No Target To Clear" << endl;
+		pause();
+		return;
+	}
+
+	else
+	{
+		cout << "[+] " << green << "Successfully " << reset << "Cleared Target" << endl;
+		getKey();
+		target = nullptr;
 	}
 }
